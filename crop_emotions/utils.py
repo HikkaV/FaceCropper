@@ -54,27 +54,7 @@ def get_outputs_names(net):
 # Draw the predicted bounding box
 
 
-def draw_predict(frame, conf, left, top, right, bottom, center_y, center_x, shape, prediction):
-    # Draw a bounding box.
-
-    if prediction == 'face':
-        rad = right - center_x
-        rad_fin = rad if rad > 0 else -rad
-        cv2.circle(frame, center=(center_x, center_y), radius=rad_fin + int(0.03 * rad_fin), color=COLOR_YELLOW,
-                   thickness=2)
-    else:
-        cv2.rectangle(frame, (left, top), (right, bottom), COLOR_YELLOW, 2)
-    text = '{:.2f}'.format(conf)
-
-    # Display the label at the top of the bounding box
-    label_size, base_line = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-
-    top = max(top, label_size[1])
-    cv2.putText(frame, text, (left, top - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.4,
-                COLOR_WHITE, 1)
-
-
-def post_process(frame, outs, conf_threshold, nms_threshold, shape, classes):
+def post_process(frame, outs, conf_threshold, nms_threshold):
     frame_height = frame.shape[0]
     frame_width = frame.shape[1]
 
@@ -106,9 +86,6 @@ def post_process(frame, outs, conf_threshold, nms_threshold, shape, classes):
                     center.append([center_x, center_y])
                     class_ids.append(class_id)
 
-
-   
-
     # Perform non maximum suppression to eliminate redundant
     # overlapping boxes with lower confidences.
     indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold,
@@ -117,23 +94,10 @@ def post_process(frame, outs, conf_threshold, nms_threshold, shape, classes):
     for i in indices:
         i = i[0]
         box = boxes[i]
-        left = box[0]
-        top = box[1]
-        width = box[2]
-        height = box[3]
-
-        center_x = center[i][0]
-        center_y = center[i][1]
-
-        prediction = classes[class_ids[i]]
-
 
         people_boxes.append(box)
-        left, top, right, bottom = refined_box(left, top, width, height)
 
-        draw_predict(frame, confidences[i], left, top, right, bottom, center_y, center_x, shape, prediction)
-
-    return  people_boxes, class_ids, indices
+    return people_boxes, class_ids, indices
 
 
 class FPS:
@@ -164,19 +128,3 @@ class FPS:
     def fps(self):
         # compute the (approximate) frames per second
         return self._num_frames / self.elapsed()
-
-
-def refined_box(left, top, width, height):
-    right = left + width
-    bottom = top + height
-
-    original_vert_height = bottom - top
-    top = int(top + original_vert_height * 0.15)
-    bottom = int(bottom - original_vert_height * 0.05)
-
-    margin = ((bottom - top) - (right - left)) // 2
-    left = left - margin if (bottom - top - right + left) % 2 == 0 else left - margin - 1
-
-    right = right + margin
-
-    return left, top, right, bottom

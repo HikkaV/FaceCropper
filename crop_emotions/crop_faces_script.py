@@ -35,14 +35,9 @@ parser.add_argument('--video_dir', type=str, default=None,
                     help='path to video file')
 parser.add_argument('--src', type=int, default=0,
                     help='source of the camera')
-parser.add_argument('--output-dir', type=str, default='outputs/',
-                    help='path to the output directory')
 parser.add_argument('--skip', type=int, default=1,
                     help='how many frames to skip')
-parser.add_argument('--shape', type=str, default='circle',
-                    help='what shapes of bounding boxes are available')
-parser.add_argument('--classes', type=str, default='/home/hikkav/crop_emotions/crop.names',
-                    help='path to list with classes to predict')
+
 args = parser.parse_args()
 
 #####################################################################
@@ -71,10 +66,6 @@ cropped = 0
 #######################################################################
 # my part of code
 
-def get_classes():
-    class_list = open(args.classes).read().strip().split('\n')
-    return class_list
-
 
 def make_dir():
     if not os.path.exists('cropped_dataset'):
@@ -92,7 +83,8 @@ def make_inputs(faces, frame):
 
     for i in range(len(crop_faces)):
         counter += 1
-        img = Image.fromarray(np.asarray(frame)).crop(crop_faces[i]).convert('RGB')
+        img = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        img = Image.fromarray(np.asarray(img)).crop(crop_faces[i]).convert('RGB')
 
         img.save('cropped_dataset/cropped_emotions.{}.png'.format(counter))
 
@@ -110,7 +102,7 @@ def _main():
     cv2.namedWindow(wind_name, cv2.WINDOW_NORMAL)
     video_list = []
     output_file = ''
-    class_list = get_classes()
+
 
     if args.video_dir is not None:
         if not os.path.exists(args.video_dir):
@@ -161,7 +153,7 @@ def _main():
             outs = net.forward(get_outputs_names(net))
 
             # Remove the bounding boxes with low confidence
-            people, ids, indices = post_process(frame, outs, CONF_THRESHOLD, NMS_THRESHOLD, args.shape, class_list,
+            people, ids, indices = post_process(frame, outs, CONF_THRESHOLD, NMS_THRESHOLD
                                                 )
 
             end_to_end(people, frame)
@@ -178,12 +170,6 @@ def _main():
                 text = '{}: {}'.format(txt, val)
                 cv2.putText(frame, text, (10, (i * 20) + 20),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, COLOR_RED, 2)
-
-            # Save the output video to file
-            # if args.image:
-            #     cv2.imwrite(os.path.join(args.output_dir, output_file), frame.astype(np.uint8))
-            # else:
-            #     video_writer.write(frame.astype(np.uint8))
 
             cv2.imshow(wind_name, frame)
 
