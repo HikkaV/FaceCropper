@@ -29,15 +29,15 @@ parser.add_argument('--model-cfg', type=str, default='/home/hikkav/crop_emotions
 parser.add_argument('--model-weights', type=str,
                     default='/home/hikkav/crop_emotions/cfg/yolov2-tiny-train-one-class_32600.weights',
                     help='path to weights of model')
-parser.add_argument('--image', type=str, default='',
-                    help='path to image file')
+
 parser.add_argument('--video_dir', type=str, default=None,
                     help='path to video file')
 parser.add_argument('--src', type=int, default=0,
                     help='source of the camera')
 parser.add_argument('--skip', type=int, default=1,
                     help='how many frames to skip')
-
+parser.add_argument('--image_dir', type=str, default='/home/hikkav/AhegaoProject/imdb_crop/00',
+                    help='path to image directory ')
 args = parser.parse_args()
 
 #####################################################################
@@ -99,27 +99,48 @@ def end_to_end(faces, frame):
 def _main():
     make_dir()
     wind_name = 'cropping faces using tiny yolov2'
-    cv2.namedWindow(wind_name, cv2.WINDOW_NORMAL)
     video_list = []
-    output_file = ''
-
 
     if args.video_dir is not None:
+
         if not os.path.exists(args.video_dir):
             print('The path {} does not exist '.format(args.video))
+            sys.exit(1)
         for i in os.listdir(args.video_dir):
             if not os.path.isfile(args.video_dir + '/' + i):
                 print("[!] ==> Input video file {} doesn't exist".format(args.video))
                 sys.exit(1)
             video_list.append(args.video_dir + '/' + i)
+    elif args.image_dir is not None:
+        for i in os.listdir(args.image_dir):
+           frame= cv2.imread(args.image_dir + '/' + i)
+           blob = cv2.dnn.blobFromImage(frame, 1 / 255, (IMG_WIDTH, IMG_HEIGHT),
+                                        [0, 0, 0], 1, crop=False)
+           net.setInput(blob)
+
+           # Runs the forward pass to get output of the output layers
+
+           outs = net.forward(get_outputs_names(net))
+
+           # Remove the bounding boxes with low confidence
+           people, ids, indices = post_process(frame, outs, CONF_THRESHOLD, NMS_THRESHOLD
+                                               )
+
+           end_to_end(people, frame)
+        print('Done')
+        sys.exit(1)
+
     else:
         video_list.append(1)
 
     # Get the video writer initialized to save the output video
 
+    cv2.namedWindow(wind_name, cv2.WINDOW_NORMAL)
     for i in video_list:
-        if i != 1:
+
+        if i != 1 :
             cap = cv2.VideoCapture(i)
+
         else:
 
             cap = cv2.VideoCapture(args.src)
@@ -131,8 +152,8 @@ def _main():
 
             # Stop the program if reached end of video
             if not has_frame:
+
                 print('[i] ==> Done processing!!!')
-                print('[i] ==> Output file is stored at', os.path.join(args.output_dir, output_file))
                 cv2.waitKey(1000)
                 break
             if args.skip != n:
