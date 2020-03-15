@@ -1,18 +1,3 @@
-# *******************************************************************
-# Face detection using the YOLOv2-tiny algorithm + age and gender recognition
-#
-# Description : crop_faces_script.py
-# The main code of the Face detection using the YOLOv3 algorithm
-#
-# *******************************************************************
-
-# Usage example:  python crop_faces_script.py --image samples/outside_000001.jpg \
-#                                    --output-dir outputs/
-#                 python crop_faces_script.py --video samples/subway.mp4 \
-#                                    --output-dir outputs/
-#                 python crop_faces_script.py --src 1 --output-dir outputs/
-
-
 import argparse
 import random
 import sys
